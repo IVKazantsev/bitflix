@@ -43,7 +43,7 @@ function getGenres(): array
 
 	$connection = getDbConnection();
 	$query = "
-		SELECT CODE, NAME FROM genre
+		SELECT g.CODE, g.NAME FROM genre g
 		LIMIT 100
 		";
 
@@ -71,9 +71,9 @@ function getMovies(?string $genre = null): array
 		$genre = mysqli_real_escape_string($connection, $genre);
 	}
 
-	$allFilmsQuery = getAllFilmsQuery();
+	$allFilmsQuery = getAllFilmsQuery();;
 
-	$sortingPartOfQuery = "
+	$filteringPartOfQuery = "
 		WHERE g.CODE = '$genre'
 	";
 
@@ -83,7 +83,7 @@ function getMovies(?string $genre = null): array
 		";
 
 	$query = ($genre === null) ? $allFilmsQuery . $groupingPartOfQuery
-		: $allFilmsQuery . $sortingPartOfQuery . $groupingPartOfQuery;
+		: $allFilmsQuery . $filteringPartOfQuery . $groupingPartOfQuery;
 
 	$result = mysqli_query($connection, $query);
 	if (!$result)
@@ -131,22 +131,25 @@ function getMovieById(?int $movieId): ?array
 
 function getAllFilmsQuery(): string
 {
-	return "SELECT m.ID, m.TITLE, m.DIRECTOR_ID, m.RATING,
+	return "SELECT m.ID, m.TITLE, m.RATING,
 		       m.AGE_RESTRICTION, m.DESCRIPTION, m.DURATION,
 		       m.ORIGINAL_TITLE, m.RELEASE_DATE,
 		       d.NAME AS DIRECTOR_NAME,
-		       GROUP_CONCAT(DISTINCT g.NAME) AS GENRES_ARRAY,
+		       (SELECT GROUP_CONCAT(DISTINCT g2.NAME)
+		           FROM movie_genre mg2
+		           INNER JOIN genre g2 on mg2.GENRE_ID = g2.ID
+		           WHERE m.ID = mg2.MOVIE_ID
+		           GROUP BY mg2.MOVIE_ID) AS GENRES_ARRAY,
 		       GROUP_CONCAT(DISTINCT a.NAME) AS ACTORS_ARRAY
 		FROM movie m
 		    INNER JOIN movie_genre mg on m.ID = mg.MOVIE_ID
 			INNER JOIN genre g on mg.GENRE_ID = g.ID
 			INNER JOIN director d on m.DIRECTOR_ID = d.ID
 		    INNER JOIN movie_actor ma on m.ID = ma.MOVIE_ID
-			INNER JOIN actor a on ma.ACTOR_ID = a.ID
-		";
+			INNER JOIN actor a on ma.ACTOR_ID = a.ID";
 }
 
-function getMovieArray($row): array
+function getMovieArray(array $row): array
 {
 	return [
 		'id' => (int)$row['ID'],
