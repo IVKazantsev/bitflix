@@ -29,3 +29,26 @@ function getDbConnection()
 
 	return $connection;
 }
+
+function getGenres(): array
+{
+	$connection = getDbConnection();
+	$query = "
+		SELECT CODE, NAME FROM genre
+		LIMIT 100
+		";
+
+	$result = mysqli_query($connection, $query);
+	if (!$result)
+	{
+		throw new Exception(mysqli_error($connection));
+	}
+
+	$genres = [];
+	while ($row = mysqli_fetch_assoc($result))
+	{
+		$genres[$row['CODE']] = $row['NAME'];
+	}
+
+	return $genres;
+}
