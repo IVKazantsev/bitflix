@@ -10,7 +10,7 @@ $title = option('APP_NAME', 'Bitflix');
 
 $genre = $_GET['genre'] ?? null;
 $search = $_GET['search'] ?? null;
-$suitableMovies = processMovieCards($movies, $genres, $genre, $search);
+$suitableMovies = filterMovieCards($movies, $genres, $genre, $search);
 
 echo view('layout', [
 	'title' => $title,

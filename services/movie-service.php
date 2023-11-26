@@ -1,10 +1,14 @@
 <?php
 
-function processMovieCards(array $movies, array $genres, ?string $genre, ?string $search): array
+function filterMovieCards(array $movies, array $genres, ?string $genre, ?string $search): array
 {
 	$suitableMovies = [];
 	foreach ($movies as $movie)
 	{
+		if($genre !== null && !array_key_exists($genre, $genres))
+		{
+			continue;
+		}
 		if ($genre !== null && !in_array($genres[$genre], $movie['genres'], true))
 		{
 			continue;

@@ -9,4 +9,8 @@ return [
 		'' => 'Главная',
 		'favorite.php' => 'Избранное',
 	],
+	'DB_HOST' => '',
+	'DB_USER' => '',
+	'DB_PASSWORD' => '',
+	'DB_NAME' => '',
 ];

@@ -9,7 +9,7 @@ require_once __DIR__ . '/../boot.php';
 $siteTitle = option('APP_NAME', 'Bitflix');
 
 $movieId = null;
-if (isset($_GET['movieId']))
+if (isset($_GET['movieId']) && is_numeric($_GET['movieId']))
 {
 	$movieId = (int)$_GET['movieId'];
 }
