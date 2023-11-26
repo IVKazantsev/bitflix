@@ -1,9 +1,6 @@
 <?php
 
 require_once __DIR__ . '/../boot.php';
-/**
- * @var array $movies
- */
 
 $genres = getGenres();
 
@@ -11,7 +8,10 @@ $title = option('APP_NAME', 'Bitflix');
 
 $genre = $_GET['genre'] ?? null;
 $search = $_GET['search'] ?? null;
-$suitableMovies = filterMovieCards($movies, $genres, $genre, $search);
+
+$movies = getMovies($genre);
+
+$suitableMovies = filterMovieCards($movies, $search);
 
 echo view('layout', [
 	'title' => $title,
