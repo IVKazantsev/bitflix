@@ -66,23 +66,3 @@ function changeStartOfArrayKeys(array $arr, string $newStartOfKey): array
 
 	return $changedArray;
 }
-
-function getMovieById(array $movies, ?int $movieId): ?array
-{
-
-	if ($movieId === null)
-	{
-		return null;
-	}
-	foreach ($movies as $movie)
-	{
-		if ($movie['id'] !== $movieId)
-		{
-			continue;
-		}
-
-		return $movie;
-	}
-
-	return null;
-}
