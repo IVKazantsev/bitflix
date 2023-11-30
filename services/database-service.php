@@ -2,10 +2,6 @@
 
 function getDbConnection()
 {
-	/**
-	 * @throws Exception
-	 */
-
 	static $connection = null;
 
 	if ($connection === null)
@@ -22,35 +18,30 @@ function getDbConnection()
 		if (!$connected)
 		{
 			$error = mysqli_connect_errno() . ': ' . mysqli_connect_error();
-			throw new \RuntimeException($error);
+			throw new RuntimeException($error);
 		}
 
 		$encodingResult = mysqli_set_charset($connection, 'utf-8');
 		if ($encodingResult)
 		{
-			throw new \RuntimeException(mysqli_error($connection));
+			throw new RuntimeException(mysqli_error($connection));
 		}
 	}
 
 	return $connection;
 }
 
-function getGenres(): array
+function getAllGenres(): array
 {
-	/**
-	 * @throws Exception
-	 */
-
 	$connection = getDbConnection();
-	$query = "
-		SELECT g.CODE, g.NAME FROM genre g
-		LIMIT 100
-		";
+	$query = "SELECT g.CODE, g.NAME
+			  FROM genre g
+              LIMIT 100";
 
 	$result = mysqli_query($connection, $query);
 	if (!$result)
 	{
-		throw new \RuntimeException(mysqli_error($connection));
+		throw new RuntimeException(mysqli_error($connection));
 	}
 
 	$genres = [];
@@ -62,6 +53,70 @@ function getGenres(): array
 	return $genres;
 }
 
+function getResultRowByQuery(string $query): ?array
+{
+	$connection = getDbConnection();
+
+	$result = mysqli_query($connection, $query);
+	if (!$result)
+	{
+		throw new RuntimeException(mysqli_error($connection));
+	}
+
+	return (mysqli_fetch_assoc($result)) ?: null;
+}
+
+function getGenresByMovieId(int $movieId): ?array
+{
+	$query = "SELECT GROUP_CONCAT(DISTINCT g.NAME) AS GENRES_ARRAY
+		           FROM movie_genre mg
+		           INNER JOIN genre g on mg.GENRE_ID = g.ID
+		           WHERE mg.MOVIE_ID = '$movieId'";
+
+	$row = getResultRowByQuery($query);
+
+	if ($row === null || $row['GENRES_ARRAY'] === null)
+	{
+		return null;
+	}
+
+	return explode(',', $row['GENRES_ARRAY']);
+}
+
+function getActorsByMovieId(int $movieId): ?array
+{
+	$query = "SELECT GROUP_CONCAT(DISTINCT a.NAME) AS ACTORS_ARRAY
+				FROM movie_actor ma 
+				INNER JOIN actor a on ma.ACTOR_ID = a.ID
+				WHERE  ma.MOVIE_ID = '$movieId'";
+
+	$row = getResultRowByQuery($query);
+
+	if ($row === null || $row['ACTORS_ARRAY'] === null)
+	{
+		return null;
+	}
+
+	return explode(',', $row['ACTORS_ARRAY']);
+}
+
+function getMovieByResultRow(array $row): array
+{
+	return [
+		'id' => $row['ID'],
+		'title' => $row['TITLE'],
+		'original-title' => $row['ORIGINAL_TITLE'],
+		'description' => $row['DESCRIPTION'],
+		'duration' => $row['DURATION'],
+		'genres' => getGenresByMovieId($row['ID']),
+		'cast' => getActorsByMovieId($row['ID']),
+		'director' => $row['DIRECTOR_NAME'],
+		'age-restriction' => $row['AGE_RESTRICTION'],
+		'release-date' => $row['RELEASE_DATE'],
+		'rating' => $row['RATING'],
+	];
+}
+
 function getMovies(?string $genre = null): array
 {
 	$connection = getDbConnection();
@@ -71,16 +126,23 @@ function getMovies(?string $genre = null): array
 		$genre = mysqli_real_escape_string($connection, $genre);
 	}
 
-	$allFilmsQuery = getAllFilmsQuery();;
+	$allFilmsQuery = "SELECT m.ID, m.TITLE, m.RATING,
+		       m.AGE_RESTRICTION, m.DESCRIPTION, m.DURATION,
+		       m.ORIGINAL_TITLE, m.RELEASE_DATE,
+		       d.NAME AS DIRECTOR_NAME
+		FROM movie m
+		    INNER JOIN movie_genre mg on m.ID = mg.MOVIE_ID
+		    INNER JOIN genre g on mg.GENRE_ID = g.ID
+			INNER JOIN director d on m.DIRECTOR_ID = d.ID";
 
 	$filteringPartOfQuery = "
-		WHERE g.CODE = '$genre'
+	WHERE g.CODE = '$genre'
 	";
 
 	$groupingPartOfQuery = "
-		GROUP BY m.ID
-		LIMIT 100
-		";
+	GROUP BY m.ID
+	LIMIT 100
+	";
 
 	$query = ($genre === null) ? $allFilmsQuery . $groupingPartOfQuery
 		: $allFilmsQuery . $filteringPartOfQuery . $groupingPartOfQuery;
@@ -88,13 +150,13 @@ function getMovies(?string $genre = null): array
 	$result = mysqli_query($connection, $query);
 	if (!$result)
 	{
-		throw new \RuntimeException(mysqli_error($connection));
+		throw new RuntimeException(mysqli_error($connection));
 	}
 
 	$movies = [];
 	while ($row = mysqli_fetch_assoc($result))
 	{
-		$movies[] = getMovieArray($row);
+		$movies[] = getMovieByResultRow($row);
 	}
 
 	return $movies;
@@ -102,66 +164,24 @@ function getMovies(?string $genre = null): array
 
 function getMovieById(?int $movieId): ?array
 {
-	/**
-	 * @throws Exception
-	 */
-
 	if ($movieId === null)
 	{
 		return null;
 	}
 
-	$connection = getDbConnection();
-	$query = getAllFilmsQuery() . "WHERE m.ID = '$movieId'";
+	$query = "SELECT m.ID, m.TITLE, m.RATING,
+		       m.AGE_RESTRICTION, m.DESCRIPTION, m.DURATION,
+		       m.ORIGINAL_TITLE, m.RELEASE_DATE,
+		       d.NAME AS DIRECTOR_NAME
+		FROM movie m
+		INNER JOIN director d on m.DIRECTOR_ID = d.ID
+		WHERE m.ID = '$movieId'";
 
-	$result = mysqli_query($connection, $query);
-	if (!$result)
-	{
-		throw new \RuntimeException(mysqli_error($connection));
-	}
-
-	$row = (mysqli_fetch_assoc($result)) ?: null;
-	if (!$row || $row['ID'] === null)
+	$row = getResultRowByQuery($query);
+	if ($row === null || $row['ID'] === null)
 	{
 		return null;
 	}
 
-	return getMovieArray($row);
-}
-
-function getAllFilmsQuery(): string
-{
-	return "SELECT m.ID, m.TITLE, m.RATING,
-		       m.AGE_RESTRICTION, m.DESCRIPTION, m.DURATION,
-		       m.ORIGINAL_TITLE, m.RELEASE_DATE,
-		       d.NAME AS DIRECTOR_NAME,
-		       (SELECT GROUP_CONCAT(DISTINCT g2.NAME)
-		           FROM movie_genre mg2
-		           INNER JOIN genre g2 on mg2.GENRE_ID = g2.ID
-		           WHERE m.ID = mg2.MOVIE_ID
-		           GROUP BY mg2.MOVIE_ID) AS GENRES_ARRAY,
-		       GROUP_CONCAT(DISTINCT a.NAME) AS ACTORS_ARRAY
-		FROM movie m
-		    INNER JOIN movie_genre mg on m.ID = mg.MOVIE_ID
-			INNER JOIN genre g on mg.GENRE_ID = g.ID
-			INNER JOIN director d on m.DIRECTOR_ID = d.ID
-		    INNER JOIN movie_actor ma on m.ID = ma.MOVIE_ID
-			INNER JOIN actor a on ma.ACTOR_ID = a.ID";
-}
-
-function getMovieArray(array $row): array
-{
-	return [
-		'id' => (int)$row['ID'],
-		'title' => $row['TITLE'],
-		'original-title' => $row['ORIGINAL_TITLE'],
-		'description' => $row['DESCRIPTION'],
-		'duration' => $row['DURATION'],
-		'genres' => explode(',', $row['GENRES_ARRAY']),
-		'cast' => explode(',', $row['ACTORS_ARRAY']),
-		'director' => $row['DIRECTOR_NAME'],
-		'age-restriction' => $row['AGE_RESTRICTION'],
-		'release-date' => $row['RELEASE_DATE'],
-		'rating' => (float)$row['RATING'],
-	];
+	return getMovieByResultRow($row);
 }
