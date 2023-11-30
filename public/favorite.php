@@ -2,7 +2,7 @@
 
 require_once __DIR__ . '/../boot.php';
 
-$genres = getGenres();
+$genres = getAllGenres();
 
 echo view('layout', [
 	'title' => 'Избранное',
