@@ -117,6 +117,16 @@ function getMovieByResultRow(array $row): array
 	];
 }
 
+function getMoviesQuery(): string
+{
+	return "SELECT m.ID, m.TITLE, m.RATING,
+		       m.AGE_RESTRICTION, m.DESCRIPTION, m.DURATION,
+		       m.ORIGINAL_TITLE, m.RELEASE_DATE,
+		       d.NAME AS DIRECTOR_NAME
+		FROM movie m
+			INNER JOIN director d on m.DIRECTOR_ID = d.ID";
+}
+
 function getMovies(?string $genre = null): array
 {
 	$connection = getDbConnection();
@@ -126,16 +136,11 @@ function getMovies(?string $genre = null): array
 		$genre = mysqli_real_escape_string($connection, $genre);
 	}
 
-	$allFilmsQuery = "SELECT m.ID, m.TITLE, m.RATING,
-		       m.AGE_RESTRICTION, m.DESCRIPTION, m.DURATION,
-		       m.ORIGINAL_TITLE, m.RELEASE_DATE,
-		       d.NAME AS DIRECTOR_NAME
-		FROM movie m
-		    INNER JOIN movie_genre mg on m.ID = mg.MOVIE_ID
-		    INNER JOIN genre g on mg.GENRE_ID = g.ID
-			INNER JOIN director d on m.DIRECTOR_ID = d.ID";
+	$allFilmsQuery = getMoviesQuery();
 
 	$filteringPartOfQuery = "
+	INNER JOIN movie_genre mg on m.ID = mg.MOVIE_ID
+	INNER JOIN genre g on mg.GENRE_ID = g.ID
 	WHERE g.CODE = '$genre'
 	";
 
@@ -169,13 +174,9 @@ function getMovieById(?int $movieId): ?array
 		return null;
 	}
 
-	$query = "SELECT m.ID, m.TITLE, m.RATING,
-		       m.AGE_RESTRICTION, m.DESCRIPTION, m.DURATION,
-		       m.ORIGINAL_TITLE, m.RELEASE_DATE,
-		       d.NAME AS DIRECTOR_NAME
-		FROM movie m
-		INNER JOIN director d on m.DIRECTOR_ID = d.ID
-		WHERE m.ID = '$movieId'";
+	$query = getMoviesQuery() . "
+	WHERE m.ID = '$movieId'
+	";
 
 	$row = getResultRowByQuery($query);
 	if ($row === null || $row['ID'] === null)
