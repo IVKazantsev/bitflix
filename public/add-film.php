@@ -2,7 +2,9 @@
 
 require_once __DIR__ . '/../boot.php';
 
-$genres = getAllGenres();
+$connection = getDbConnection();
+
+$genres = getAllGenres($connection);
 
 $title = option('APP_NAME', 'Bitflix');
 

@@ -1,25 +1,5 @@
 <?php
 
-function filterMovieCards(array $movies, ?string $search): array
-{
-	$suitableMovies = [];
-	foreach ($movies as $movie)
-	{
-		if (
-			($search !== null)
-			&& (mb_stripos($movie['title'], $search, 0, 'UTF-8') === false)
-			&& (mb_stripos($movie['original-title'], $search, 0, 'UTF-8') === false)
-		)
-		{
-			continue;
-		}
-
-		$suitableMovies[] = $movie;
-	}
-
-	return $suitableMovies;
-}
-
 function formatRating(float $rating): string
 {
 	return number_format($rating, option('DECIMALS_IN_RATING', 1), '.', '');

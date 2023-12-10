@@ -2,8 +2,9 @@
 
 require_once __DIR__ . '/../boot.php';
 
-$genres = getAllGenres();
-$movies = getMovies();
+$connection = getDbConnection();
+
+$genres = getAllGenres($connection);
 
 $siteTitle = option('APP_NAME', 'Bitflix');
 
@@ -13,7 +14,7 @@ if (isset($_GET['movieId']) && is_numeric($_GET['movieId']))
 	$movieId = (int)$_GET['movieId'];
 }
 
-$movie = getMovieById($movieId);
+$movie = getMovieById($connection, $movieId);
 
 echo view('layout', [
 	'title' => $movie['title'] ?? $siteTitle,
